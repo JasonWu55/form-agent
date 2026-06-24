@@ -1,0 +1,23 @@
+title: 顧客滿意度問卷 / Customer Satisfaction Survey
+description: 您的回饋將協助我們改善服務（約 1 分鐘）。/ Your feedback helps us improve (about 1 minute).
+worksheet: Responses
+questions:
+  - id: name
+    prompt: 請問如何稱呼您？ / How may we address you?
+    type: text
+    required: true
+  - id: rating
+    prompt: 對本次整體服務的滿意度（1–5）？ / Overall satisfaction with our service (1–5)?
+    type: int
+    min: 1
+    max: 5
+    required: true
+  - id: recommend
+    prompt: 您會推薦給朋友嗎？ / Would you recommend us to a friend?
+    type: choice
+    options: ["會 / Yes", "不會 / No"]
+    required: true
+  - id: comments
+    prompt: 還有其他建議嗎？（可略過）/ Any other suggestions? (optional)
+    type: text
+    required: false

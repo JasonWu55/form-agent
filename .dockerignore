@@ -1,0 +1,14 @@
+# Keep secrets and local cruft OUT of the build context (and out of any future COPY).
+.env
+.env.*
+!.env.example
+cred.json
+service_account.json
+*.db
+*.sqlite
+data/
+.venv/
+__pycache__/
+*.pyc
+.git/
+.whl/

@@ -1,0 +1,13 @@
+services:
+  form-agent:
+    build: .
+    image: 192.168.1.250:5500/form-agent:latest
+    env_file: .env
+    environment:
+      AGENT_DB_PATH: /data/agent.db
+      SURVEY_PATH: /app/agent/survey.yaml
+    volumes:
+      - ./data:/data
+    # TUI is interactive — start it with:  docker compose run --rm form-agent
+    stdin_open: true
+    tty: true

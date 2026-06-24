@@ -1,0 +1,33 @@
+# Web-SSH quarantine box for the survey TUI.
+# ponytail: FROM the base app image so the Python install isn't duplicated.
+# Build the base first:  docker compose build   (or it's pulled from the NAS registry).
+FROM 192.168.1.250:5500/form-agent:latest
+
+# ttyd 1.7.7 static binary — no apt package in python:3.12-slim. Pinned by version
+# AND sha256 (release assets are mutable; verify the bytes, not just the tag).
+# amd64 host → ttyd.x86_64 ; on arm64 swap to ttyd.aarch64 (and update --checksum).
+ADD --checksum=sha256:8a217c968aba172e0dbf3f34447218dc015bc4d5e59bf51db2f2cd12b7be4f55 \
+    https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.x86_64 /usr/local/bin/ttyd
+
+RUN chmod +x /usr/local/bin/ttyd \
+ && printf '#!/bin/sh\nexec python -m agent "$@"\n' > /usr/local/bin/tui \
+ && chmod +x /usr/local/bin/tui \
+ && useradd --create-home --shell /bin/bash agent \
+ # Login banner — `bash -l` sources /etc/profile.d/*.sh (lives on the read-only
+ # root, so the /home/agent tmpfs can't mask it). Tells users to run `tui`.
+ && printf '%s\n' \
+      'echo' \
+      'echo "  Survey Agent — quarantine shell"' \
+      'echo "  ▶ type:  tui    to start the survey"' \
+      'echo "  (do NOT use uv run here — deps are system-installed and /app is read-only)"' \
+      'echo' \
+      > /etc/profile.d/tui.sh
+
+USER agent
+WORKDIR /app
+ENV HOME=/home/agent
+
+# ttyd is READONLY by default → -W to allow typing; -c for HTTP basic auth (from env).
+# Fail CLOSED: refuse to start unless BOTH creds are set — otherwise ttyd would serve
+# the shell behind an empty password. Then exec a login shell; user types `tui`.
+CMD ["sh", "-c", ": \"${WEB_USER:?set WEB_USER in .env}\"; : \"${WEB_PASS:?set WEB_PASS in .env}\"; exec ttyd -p 7681 -W -c \"$WEB_USER:$WEB_PASS\" bash -l"]

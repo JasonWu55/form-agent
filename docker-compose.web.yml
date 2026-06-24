@@ -1,0 +1,47 @@
+# Browser terminal ("web SSH") into a QUARANTINE container running the survey TUI.
+# Additive — the main docker-compose.yml is untouched.
+#
+#   docker compose build                                   # build the base app image first
+#   docker compose -f docker-compose.web.yml up -d --build # build + start this box
+#   open http://HOST:${WEB_PORT:-7681}  → basic auth → type `tui`
+services:
+  form-agent-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    image: 192.168.1.250:5500/form-agent-web:latest
+    env_file: .env                  # OPENAI_*, GOOGLE_*, WEB_USER, WEB_PASS, WEB_PORT
+    environment:
+      AGENT_DB_PATH: /data/agent.db
+      SURVEY_PATH: /app/agent/survey.yaml
+      GOOGLE_SA_KEY_PATH: /run/secrets/sa.json   # the mounted key (below), NOT baked into the image
+    volumes:
+      # Google service-account key, mounted READ-ONLY at runtime. Stays out of the
+      # image / registry (cred.json is in .dockerignore). The container reads it via
+      # GOOGLE_SA_KEY_PATH. ponytail: a plain ro bind mount — swap to compose
+      # `secrets:` only if you need multiple secrets or external secret stores.
+      - ./cred.json:/run/secrets/sa.json:ro
+    ports:
+      - "${WEB_PORT:-7681}:7681"    # the ONLY inbound surface
+
+    # ---- quarantine: the container is the jail ----
+    read_only: true                 # root fs is immutable
+    tmpfs:                          # the only writable paths (all ephemeral)
+      - /tmp:size=64m,mode=1777
+      - /data:size=16m,mode=1777    # session db; mode=1777 so the NON-ROOT agent user can write it. Without it the tmpfs is root-owned, the SQLite write fails, no session/history persists, and the TUI loops re-asking Q1.
+      - /home/agent:size=16m,mode=1777  # HOME (Textual/XDG scratch); 1777 so non-root agent can write (tmpfs else inherits the dir's 700)
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 512m
+    cpus: "1.0"
+    init: true                      # reap the shells ttyd spawns
+    restart: unless-stopped
+    networks:
+      - quarantine
+
+networks:
+  quarantine:
+    driver: bridge                  # outbound OK (LLM + Sheets); no inbound except the mapped port

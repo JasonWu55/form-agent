@@ -1,0 +1,12 @@
+.env
+*.db
+*.sqlite
+__pycache__/
+*.pyc
+.venv/
+data/
+service_account.json
+cred.json
+.env.*
+!.env.example
+.whl/
