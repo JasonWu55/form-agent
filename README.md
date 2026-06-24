@@ -255,17 +255,6 @@ form-agent/
 
 ---
 
-## Push image to the NAS registry
-
-```bash
-docker compose build
-docker push 192.168.1.250:5500/form-agent:latest
-```
-
-Or use the `bell-docker-push` skill.
-
----
-
 ## Out of scope
 
 No MCP server, REST API, Telegram/web front-ends, RAG, multimodal, analytics

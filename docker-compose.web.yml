@@ -9,7 +9,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.web
-    image: 192.168.1.250:5500/form-agent-web:latest
     env_file: .env                  # OPENAI_*, GOOGLE_*, WEB_USER, WEB_PASS, WEB_PORT
     environment:
       AGENT_DB_PATH: /data/agent.db
